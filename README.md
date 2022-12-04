@@ -9,3 +9,6 @@ wdi.py illustrates the application of AXIL weights in the context of predicting 
 NOTE: This is experimental code for research purposes. Functionality may change without warning.
 
 Feel free to send any comments / suggestions to p.geertsema at auckland.ac.nz
+
+AXIL weights for countries
+![image](https://user-images.githubusercontent.com/78324985/205521706-1bc8b2c3-75ae-4e27-9dd7-7f70f02dd332.png)
