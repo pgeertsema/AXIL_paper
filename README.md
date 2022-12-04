@@ -2,15 +2,17 @@
 
 This repository contains code for the paper "*Instance-based Explanations for Gradient Boosting Machine Predictions with AXIL Weights*" Geertsema & Lu (2022)
 
-axil.py contains functionality for fitting to a LightGBM model and training data (Explainer.fit()), and constructing AXIL weights for a data set (Explainer.transform())
+In a nutshell, AXIL weights allows any LightGBM regression prediction to be expressed as a sum of the products of the AXIL weights and the training data target instances. So $y_{j}^{pred}= k_{j} \cdot y_{train}$ where $k_{j}$ is the vector of AXIL weights for instance j and $y_{train}$ is the vector of training data targets.
 
-wdi.py illustrates the application of AXIL weights in the context of predicting smoking prevalence by country (see the paper for details)
+[axil.py](axil.py) contains functionality for fitting to a LightGBM model and training data (Explainer.fit()), and constructing AXIL weights for a data set (Explainer.transform())
+
+[wdi.py](wdi.py) illustrates the application of AXIL weights in the context of predicting smoking prevalence by country (see the paper for details)
 
 NOTE: This is experimental code for research purposes. Functionality may change without warning.
 
 Feel free to send any comments / suggestions to p.geertsema at auckland.ac.nz
 
-AXIL weights for countries in relation to predicting smoking prevalence (see paper)
+*Image below: AXIL weights for countries in relation to predicting smoking prevalence (see paper)*
 
 ![image](https://user-images.githubusercontent.com/78324985/205521898-85c37c94-d3a8-4f1f-a101-f57f2e62c1e8.png)
 
