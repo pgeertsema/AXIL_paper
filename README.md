@@ -2,7 +2,9 @@
 
 This repository contains code for the paper "Instance-based Explanations for Gradient Boosting Machine Predictions with AXIL Weights"
 
-AXIL.py contains functionality for fitting to a LightGBM model and training data (Explainer.fit()), and constructing AXIL weights for a data set (Explainer.transform())
+axil.py contains functionality for fitting to a LightGBM model and training data (Explainer.fit()), and constructing AXIL weights for a data set (Explainer.transform())
+
+wdi.py illustrates the application of AXIL weights in the context of predicting smoking prevalence by country (see the paper for details)
 
 NOTE: This is experimental code for research purposes. Functionality may change without warning.
 
