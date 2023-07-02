@@ -6,6 +6,12 @@ In a nutshell, AXIL weights allows any LightGBM regression prediction to be expr
 
 [axil.py](axil.py) contains functionality for fitting to a LightGBM model and training data (Explainer.fit()), and constructing AXIL weights for a data set (Explainer.transform())
 
+[axil_benchmarks.py](axil_benchmarks.py) contains code that benchmarks AXIL against k-NN and five other alorithms on 12 datasets.
+
+[axil_performance.py](axil_performance.py) contains code that measures the execution time of AXIL on synthetics datasets with a vayring number of instances and GBM trees
+
+[axil_test.py](axil_test.py) contains code that validates the AXIL predicted value against the GBM predicted value
+
 [wdi.py](wdi.py) illustrates the application of AXIL weights in the context of predicting smoking prevalence by country (see the paper for details)
 
 NOTE: This is experimental code for research purposes. Functionality may change without warning.
