@@ -1,6 +1,7 @@
 # AXIL - Additive eXplanations using Instance Loadings
-# Copyright (C) Paul Geertsema 2022
+# Copyright (C) Paul Geertsema 2022, 2023
 # Python code to represent LightGBM regression predictions as a linear combination of training data target values
+# See "Instance-based Explanations for Gradient Boosting Machine Predictions" by Geertsema & Lu
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -24,14 +25,15 @@
 
 import numpy as np
 import lightgbm as lgb
-from numba import jit
 import os
+import psutil
+
 
 #---------------------------------------------------------------
 # Leaf Coincidence Matrix (LCM) utility function
 #---------------------------------------------------------------
 
-@jit(nopython=True)
+
 def LCM(vector1, vector2):
     '''
     utility function to create leaf coincidence matrix L from leaf membership vectors vector1 (train) and vector2 (test)
@@ -41,18 +43,12 @@ def LCM(vector1, vector2):
     Input arguments vector1 and vector2 are list-like, that is, support indexing and len()
     Output L is a python matrix of dimension (len(vector1), len(vector2))
     '''
-    # tree contains a list of predicted values
-    N1 = len(vector1)
-    N2 = len(vector2)
+    # relies on numpy broadcasting to generate self equality matrix
+    vector1 = np.array(vector1)[:, None]
+    vector2 = np.array(vector2)
+    return vector1 == vector2
 
-    L = np.full((N1, N2), np.nan)
-    for v1 in range(0, N1):
-        for v2 in range(0, N2):
-            same = (vector1[v1] == vector2[v2])
-            L[v1][v2] = same
-
-    return L
-    # should be of dimension (N1, N2)
+# LCM([201,893,492,131,478,653,152],[58,131,307,653,492])*1
 
 
 
@@ -115,14 +111,18 @@ class Explainer:
     def fit(self, X):
 
         if isinstance(X, lgb.basic.Dataset):
-            print("Sorry, you need to provide the raw data, just like for LightGBM predict()")
+            print("Sorry, you need to provide the raw data (type lightgbm.basic.Dataset), just like for LightGBM predict()")
             return None
 
         # number of observations in data
         N = len(X)
 
         self.train_data = X
+
+        # obtain instance leaf membership information from trained LightGBM model (argument pred_leaf=True)
         instance_leaf_membership = self.model.predict(data=X, pred_leaf=True)
+
+        # the first "tree" mimics a single leaf, so that it effectively calculates the training data sample average
         lm = np.concatenate((np.ones((1, N)), instance_leaf_membership.T), axis = 0) + 1
 
         # number of trees in model
@@ -148,7 +148,10 @@ class Explainer:
             D = LCM(lm[i], lm[i])
             P = self.learning_rate * ( (D / (ones @ D)) @ (I-G_prev) )
             P_list.append(P)
-            G_prev = G_prev + P
+            G_prev +=  P
+            #process = psutil.Process()
+            #print(f"Fitting tree {i}, memory used (GB):", process.memory_info().rss/1000000000)  # in mb
+
 
         self.trained = True
         self.P_list = P_list
@@ -191,6 +194,16 @@ class Explainer:
         # execute for 1 to num_trees (inclusive)
         for i in range(1, num_trees+1):
             L = LCM(self.lm_train[i], lm_test[i])
-            K = K + (P[i].T @ (L / (ones_P @ L)))
+            K += (P[i].T @ (L / (ones_P @ L)))
+            #process = psutil.Process()
+            #print(f"Transforming tree {i}, memory used (GB):", process.memory_info().rss/1000000000)  # in mb
+
 
         return K
+    
+    def reset(self):
+        # reset to initialised state
+        self.train_data = None
+        self.P_list = None
+        self.lm_train = []
+        self.trained = False

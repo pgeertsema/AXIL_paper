@@ -1,6 +1,7 @@
-# AXIL example with World Data Indicators
-# Copyright (C) Paul Geertsema 2022
-# Python code to explain smoking prevalence by country using AXIL weights
+# AXIL - Additive eXplanations using Instance Loadings
+# Copyright (C) Paul Geertsema 2022, 2023
+# Python code to represent LightGBM regression predictions as a linear combination of training data target values
+# See "Instance-based Explanations for Gradient Boosting Machine Predictions" by Geertsema & Lu
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -28,8 +29,9 @@ import axil
 import os
 import shap
 
-SOURCE = r"D:\Data\Instance"
-os.chdir(r"D:\Data\Instance")
+SOURCE = r"D:\Data\AXIL"
+RESULTS = r"C:\Paul\Dropbox\AXIL\results"
+os.chdir(RESULTS)
 
 #---------------------------------------------------------------
 # Data
@@ -37,7 +39,7 @@ os.chdir(r"D:\Data\Instance")
 
 TARGET = "smoking_rate"
 
-data = pd.read_stata("final_data.dta", index_col="Country")
+data = pd.read_stata(SOURCE+"\\final_data.dta", index_col="Country")
 data = data.sort_values([TARGET], ascending=False).reset_index()
 data["gdp_per_capita"]
 
@@ -56,7 +58,7 @@ y_test = data_test[TARGET]
 plt.close()
 plt.scatter(data_train.gdp_per_capita, data_train.smoking_rate)
 plt.xlabel("gdp_per_capita")
-plt.ylabel("smoking_rate")  # NOT WORKING (WHY?)
+plt.ylabel("smoking_rate") 
 plt.savefig("scatter_"+TARGET+"_vs_GDP.pdf")
 plt.close()
 
@@ -82,6 +84,8 @@ params = {
 #---------------------------------------------------------------
 # Train model
 #---------------------------------------------------------------
+
+np.random.seed(42)
 
 lgb_data = lgb.Dataset(X_train, label=y_train)
 model = lgb.train(params, lgb_data, num_boost_round=TREES)
@@ -116,30 +120,32 @@ shap.plots.bar(shap_values, show=False)
 fig.savefig("SHAP_magnitudes_"+TARGET+".pdf", bbox_inches="tight")
 
 #---------------------------------------------------------------
-# Brazil example with SHAP
+# Chosen example with SHAP
 #---------------------------------------------------------------
 
-brazil_index = data_test.Country.to_list().index("Brazil")
-brazil_shaps = pd.concat([ X_train.columns.to_series().reset_index(),  pd.Series(shap_values[brazil_index].values).reset_index()], axis=1)
-brazil_shaps = brazil_shaps.iloc[:,[1,3]]
-brazil_shaps.columns =["Country","SHAP"]
-brazil_shaps.sort_values("SHAP", inplace=True, ascending=False)
+chosen_index = data_test.Country.to_list().index("South Africa")
+
+chosen_shaps = pd.concat([ X_train.columns.to_series().reset_index(),  pd.Series(shap_values[chosen_index].values).reset_index()], axis=1)
+chosen_shaps = chosen_shaps.iloc[:,[1,3]]
+chosen_shaps.columns =["Country","SHAP"]
+chosen_shaps.sort_values("SHAP", inplace=True, ascending=False)
 
 # check
-diff = y_train_hat[brazil_index] - (y_train_hat.mean() + brazil_shaps["SHAP"].sum())
-print("brazil_diff = ", diff)
+diff = y_train_hat[chosen_index] - (y_train_hat.mean() + chosen_shaps["SHAP"].sum())
+print("Chosen_diff = ", diff)
 
 num = 2 
 mean_list = [("mean_of_predictions", y_train_hat.mean())]
-start_list = [(a,b) for (a,b) in zip(brazil_shaps.head(num).Country, brazil_shaps.head(2).SHAP)] 
-end_list = [(a,b) for (a,b) in zip(brazil_shaps.tail(num).Country, brazil_shaps.tail(2).SHAP)]
+start_list = [(a,b) for (a,b) in zip(chosen_shaps.head(num).Country, chosen_shaps.head(2).SHAP)] 
+end_list = [(a,b) for (a,b) in zip(chosen_shaps.tail(num).Country, chosen_shaps.tail(2).SHAP)]
 
-omitted = y_train_hat[brazil_index] - (y_train_hat.mean() + brazil_shaps.head(2).SHAP.sum() + brazil_shaps.tail(2).SHAP.sum())
+omitted = y_train_hat[chosen_index] - (y_train_hat.mean() + chosen_shaps.head(2).SHAP.sum() + chosen_shaps.tail(2).SHAP.sum())
 omitted_list = [("<omitted>", omitted)]
-pred_list = [("model_prediction", y_train_hat[brazil_index])]
+pred_list = [("model_prediction", y_train_hat[chosen_index])]
 
 combined_list = mean_list + start_list + omitted_list + end_list + pred_list
 
+# print abbreviated SHAP values
 for a, b in combined_list:
     print(a,b)
 
@@ -159,6 +165,7 @@ v = y_train.to_numpy().reshape(len(y_train),1)
 # (N x 1)
 
 axil_y_train_hat = loadings_train.T @ v
+axil_y_train_hat
 
 print(axil_y_train_hat - y_train_hat.reshape(len(y_train_hat),1))
 
@@ -191,22 +198,22 @@ y_test.to_csv("Target_actual.csv")
 np.savetxt("Target_predicted.csv", y_test_hat)
 
 #---------------------------------------------------------------
-# Brazil example with AXIL
+# Chosen example with AXIL
 #---------------------------------------------------------------
 
-# Brazil
-brazil_index = data_test.Country.to_list().index("Brazil")
-print(y_train @ loadings_train[:,brazil_index])
+# Chosen
+chosen_index = data_test.Country.to_list().index("South Africa")
+print(y_train @ loadings_train[:,chosen_index])
 
-# print Brazil weights
-brazil_AXIL_weights = pd.concat([data["Country"], pd.DataFrame(loadings_train[:,brazil_index]), pd.DataFrame(y_train)], axis=1)
-brazil_AXIL_weights.columns = ["Country", "AXIL","y_train"]
-brazil_AXIL_weights["product"] = brazil_AXIL_weights["AXIL"] * brazil_AXIL_weights["y_train"]
+# print Chosen weights
+chosen_AXIL_weights = pd.concat([data["Country"], pd.DataFrame(loadings_train[:,chosen_index]), pd.DataFrame(y_train)], axis=1)
+chosen_AXIL_weights.columns = ["Country", "AXIL","y_train"]
+chosen_AXIL_weights["product"] = chosen_AXIL_weights["AXIL"] * chosen_AXIL_weights["y_train"]
 
-brazil_AXIL_weights.sort_values("AXIL", inplace=True, ascending=False)
+chosen_AXIL_weights.sort_values("AXIL", inplace=True, ascending=False)
 
-AXIL_test_weights["Brazil"].sort_values(ascending=False).head(6)
-AXIL_test_weights["Brazil"].sort_values(ascending=False).tail(6)
+AXIL_test_weights["South Africa"].sort_values(ascending=False).head(6)
+AXIL_test_weights["South Africa"].sort_values(ascending=False).tail(6)
 
 y_train_hat.mean()/len(y_train_hat)
 
@@ -257,7 +264,7 @@ graph.min()
 graph.max()
 
 np.fill_diagonal(graph, 0)
-G = nx.from_numpy_matrix(graph)
+G = nx.from_numpy_array(graph)
 nx.draw_circular(G, with_labels=True, labels=labels, font_weight='light', node_color = data_test[TARGET].to_list(), cmap="Reds", edge_color="gray")
 plt.savefig("network_"+TARGET+".pdf")
 plt.close()
