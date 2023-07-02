@@ -1,6 +1,6 @@
 # AXIL_paper
 
-This repository contains code for the paper "*Instance-based Explanations for Gradient Boosting Machine Predictions with AXIL Weights*" Geertsema & Lu (2022)
+This repository contains code for the paper "*Instance-based Explanations for Gradient Boosting Machine Predictions with AXIL Weights*" Geertsema & Lu (2023)
 
 In a nutshell, AXIL weights allows any LightGBM regression prediction to be expressed as a sum of the products of the AXIL weights and the training data target instances. So $y_{j}^{pred}= k_{j} \cdot y_{train}$ where $k_{j}$ is the vector of AXIL weights for instance j and $y_{train}$ is the vector of training data targets.
 
