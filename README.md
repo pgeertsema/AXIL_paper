@@ -16,7 +16,7 @@ In a nutshell, AXIL weights allows any LightGBM regression prediction to be expr
 
 NOTE: This is experimental code for research purposes. Functionality may change without warning.
 
-Feel free to send any comments / suggestions to p.geertsema at auckland.ac.nz
+Feel free to send any comments / suggestions to paul.geertsema at vlerick.com
 
 *Image below: AXIL weights for countries in relation to predicting smoking prevalence (see paper)*
 
